@@ -1,5 +1,4 @@
-
-# coding: utf-8
+#coding: utf-8
 
 # In[71]:
 
@@ -8,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup as bs
 from splinter import Browser
 import pandas as pd
-
+import time
 
 # In[42]:
 
@@ -55,29 +54,27 @@ def scrape():
 
     jpl_url = 'https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars'
     browser.visit(jpl_url)
-
+    time.sleep(2)
 
     # In[56]:
 
 
-    browser.click_link_by_partial_text('FULL')
+    browser.find_by_id('full_image').first.click()
 
 
     # In[61]:
-
-
+    
     html = browser.html
     soup = bs(html, 'html.parser')
 
-    image = soup.find('img', class_='fancybox-image')
-    src = image["src"]
+    image_url = soup.find("a", class_="fancybox")["data-fancybox-href"]    
 
 
     # In[63]:
 
 
     base_url = 'https://www.jpl.nasa.gov'
-    featured_image_url = base_url + src
+    featured_image_url = base_url + image_url
     featured_image_url
 
 
@@ -124,17 +121,14 @@ def scrape():
     mars_facts_url = 'https://space-facts.com/mars/'
     mars_facts = pd.read_html(mars_facts_url)
 
+    df = mars_facts[0]
+    df.columns = ["Categories", "Measurements"]
+    df.set_index(["Categories"])
 
-    # In[77]:
-
-
-    mars_facts = pd.DataFrame(mars_facts)
-
-
-    # In[78]:
-
-
-    mars_facts_html = mars_facts.to_html()
+  
+    html_table = df.to_html()
+    #replace all the \n with an empty space instead
+    html_table.replace('\n', '')
 
 
     # In[85]:
@@ -161,20 +155,22 @@ def scrape():
         img_url = img['href']
         hemi_urls.append(img_url)
         browser.visit(hemispheres_url)
-    hemisphere_image_urls = dict(zip(hemi_names, hemi_urls))
+     #hemisphere_image_urls = dict(zip(hemi_names, hemi_urls))
 
 
     # In[92]:
 
 
-    hemisphere_image_urls = dict(hemisphere_dict)
+    #hemisphere_image_urls = dict(hemisphere_dict)
 
-    return scrape_results = {
+    scrape_results = {
         'news_title': latest_title,
         'news_text': latest_description,
         'featured_img': featured_image_url,
-        'mars_facts':mars_facts,
+        'mars_facts':html_table,
         'mars_weather': mars_weather,
-        'hemispheres_dict': hemisphere_image_urls
+        'hemisphere_names': hemi_names,
+        'hemisphere_urls': hemi_urls
     }
+    return scrape_results
 

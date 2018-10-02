@@ -7,33 +7,31 @@ import scrape
 app = Flask(__name__)
 
 # Use flask_pymongo to set up mongo connection
-app.config["MONGO_URI"] = "mongodb://localhost:27017/weather_app"
+app.config["MONGO_URI"] = "mongodb://localhost:27017/mars_db"
 mongo = PyMongo(app)
 
 # Or set inline
 # mongo = PyMongo(app, uri="mongodb://localhost:27017/weather_app")
-
 
 # create route that renders index.html template and finds documents from mongo
 @app.route("/")
 def home():
 
     # Find data
-    forecasts = mongo.db.collection.find()
-
+    mars = mongo.db.mars_scrape.find_one()
+    
     # return template and data
-    return render_template("index.html", forecasts=forecasts)
-
+    return render_template("index.html", mars=mars)
 
 # Route that will trigger scrape functions
 @app.route("/scrape")
-def scrape():
+def scrapper():
 
     # Run scraped functions
     mars_scrape = scrape.scrape()
 
     # Insert forecast into database
-    mongo.db.collection.insert_one(mars_scrape)
+    mongo.db.mars_scrape.update({}, mars_scrape, upsert=True)
 
     # Redirect back to home page
     return redirect("/", code=302)
